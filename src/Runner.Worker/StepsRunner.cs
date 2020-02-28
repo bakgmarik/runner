@@ -351,6 +351,7 @@ namespace GitHub.Runner.Worker
 
                 if (continueOnError)
                 {
+                    step.ExecutionContext.Outcome = step.ExecutionContext.Result;
                     step.ExecutionContext.Result = TaskResult.Succeeded;
                     Trace.Info($"Updated step result (continue on error)");
                 }
@@ -417,6 +418,7 @@ namespace GitHub.Runner.Worker
         private void CompleteStep(IStep step, IStep nextStep, TaskResult? result = null, string resultCode = null)
         {
             var executionContext = step.ExecutionContext;
+            var stepsContext = step.ExecutionContext.StepsContext;
             if (!string.IsNullOrEmpty(executionContext.ScopeName))
             {
                 // Gather current and ancestor scopes to finalize
@@ -436,7 +438,6 @@ namespace GitHub.Runner.Worker
                 }
 
                 // Finalize current and ancestor scopes
-                var stepsContext = step.ExecutionContext.StepsContext;
                 while (scopesToFinalize?.Count > 0)
                 {
                     scope = scopesToFinalize.Dequeue();
@@ -458,10 +459,10 @@ namespace GitHub.Runner.Worker
                         return;
                     }
 
+                    var parentScopeName = scope.ParentName;
+                    var contextName = scope.ContextName;
                     if (outputs?.Count > 0)
                     {
-                        var parentScopeName = scope.ParentName;
-                        var contextName = scope.ContextName;
                         foreach (var pair in outputs)
                         {
                             var outputName = pair.Key;
@@ -470,8 +471,14 @@ namespace GitHub.Runner.Worker
                             executionContext.Debug($"{reference}='{outputValue}'");
                         }
                     }
+
+                    stepsContext.SetOutcome(parentScopeName, contextName, (step.ExecutionContext.Outcome ?? result ?? step.ExecutionContext.Result ?? TaskResult.Succeeded).ToActionResult().ToString());
+                    stepsContext.SetConclusion(parentScopeName, contextName, (result ?? step.ExecutionContext.Result ?? TaskResult.Succeeded).ToActionResult().ToString());
                 }
             }
+
+            stepsContext.SetOutcome(executionContext.ScopeName, executionContext.ContextName, (step.ExecutionContext.Outcome ?? result ?? step.ExecutionContext.Result ?? TaskResult.Succeeded).ToActionResult().ToString());
+            stepsContext.SetConclusion(executionContext.ScopeName, executionContext.ContextName, (result ?? step.ExecutionContext.Result ?? TaskResult.Succeeded).ToActionResult().ToString());
 
             executionContext.Complete(result, resultCode: resultCode);
         }
