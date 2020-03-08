@@ -23,12 +23,14 @@ namespace GitHub.DistributedTask.Pipelines.ObjectTemplating
         public const String FetchDepth = "fetch-depth";
         public const String GeneratedId = "generated-id";
         public const String GitHub = "github";
+        public const String HashFiles = "hashFiles";
         public const String Id = "id";
         public const String If = "if";
         public const String Image = "image";
         public const String Include = "include";
         public const String Inputs = "inputs";
         public const String Job = "job";
+        public const String JobIfResult = "job-if-result";
         public const String JobOutputs = "job-outputs";
         public const String Jobs = "jobs";
         public const String Labels = "labels";
@@ -58,6 +60,7 @@ namespace GitHub.DistributedTask.Pipelines.ObjectTemplating
         public const String Shell = "shell";
         public const String Skipped = "skipped";
         public const String StepEnv = "step-env";
+        public const String StepIfResult = "step-if-result";
         public const String Steps = "steps";
         public const String StepsScopeInputs = "steps-scope-inputs";
         public const String StepsScopeOutputs = "steps-scope-outputs";

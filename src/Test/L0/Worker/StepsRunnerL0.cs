@@ -1,16 +1,16 @@
-﻿using GitHub.DistributedTask.WebApi;
-using GitHub.Runner.Worker;
-using Moq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Moq;
 using Xunit;
 using GitHub.DistributedTask.Expressions2;
 using GitHub.DistributedTask.Pipelines.ContextData;
 using GitHub.DistributedTask.ObjectTemplating.Tokens;
+using GitHub.DistributedTask.WebApi;
+using GitHub.Runner.Worker;
 
 namespace GitHub.Runner.Common.Tests.Worker
 {
@@ -26,9 +26,6 @@ namespace GitHub.Runner.Common.Tests.Worker
         private TestHostContext CreateTestContext([CallerMemberName] String testName = "")
         {
             var hc = new TestHostContext(this, testName);
-            var expressionManager = new ExpressionManager();
-            expressionManager.Initialize(hc);
-            hc.SetSingleton<IExpressionManager>(expressionManager);
             Dictionary<string, VariableValue> variablesToCopy = new Dictionary<string, VariableValue>();
             _variables = new Variables(
                 hostContext: hc,
@@ -48,6 +45,7 @@ namespace GitHub.Runner.Common.Tests.Worker
             _contexts["runner"] = new DictionaryContextData();
             _contexts["job"] = _jobContext;
             _ec.Setup(x => x.ExpressionValues).Returns(_contexts);
+            _ec.Setup(x => x.ExpressionFunctions).Returns(new List<IFunctionInfo>());
             _ec.Setup(x => x.JobContext).Returns(_jobContext);
 
             _stepContext = new StepsContext();
@@ -382,16 +380,11 @@ namespace GitHub.Runner.Common.Tests.Worker
         {
             using (TestHostContext hc = CreateTestContext())
             {
-                var expressionManager = new Mock<IExpressionManager>();
-                expressionManager.Object.Initialize(hc);
-                hc.SetSingleton<IExpressionManager>(expressionManager.Object);
-                expressionManager.Setup(x => x.Evaluate(It.IsAny<IExecutionContext>(), It.IsAny<string>(), It.IsAny<bool>())).Throws(new Exception());
-
                 // Arrange.
                 var variableSets = new[]
                 {
-                    new[] { CreateStep(hc, TaskResult.Succeeded, "success()") },
-                    new[] { CreateStep(hc, TaskResult.Succeeded, "success()") },
+                    new[] { CreateStep(hc, TaskResult.Succeeded, "fromJson('not json')") },
+                    new[] { CreateStep(hc, TaskResult.Succeeded, "fromJson('not json')") },
                 };
                 foreach (var variableSet in variableSets)
                 {
@@ -537,6 +530,7 @@ namespace GitHub.Runner.Common.Tests.Worker
             stepContext.Setup(x => x.Variables).Returns(_variables);
             stepContext.Setup(x => x.EnvironmentVariables).Returns(_env);
             stepContext.Setup(x => x.ExpressionValues).Returns(_contexts);
+            stepContext.Setup(x => x.ExpressionFunctions).Returns(new List<IFunctionInfo>());
             stepContext.Setup(x => x.JobContext).Returns(_jobContext);
             stepContext.Setup(x => x.StepsContext).Returns(_stepContext);
             stepContext.Setup(x => x.Complete(It.IsAny<TaskResult?>(), It.IsAny<string>(), It.IsAny<string>()))
